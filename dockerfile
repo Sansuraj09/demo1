@@ -1,4 +1,8 @@
+
 FROM nginx:latest
-COPY stu.html /usr/share/nginx/index.html
+
+COPY stu.html /usr/share/nginx/html/index.html
+
 EXPOSE 80
+
 CMD ["nginx", "-g", "daemon off;"]
