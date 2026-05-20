@@ -1,54 +1,82 @@
 pipeline {
     agent any
-
     environment {
-        IMAGE_NAME = "sansuraj09/demo1"
-        IMAGE_TAG  = "${env.BUILD_NUMBER}"
-        CONTAINER_NAME = "demo1_app"
+        APP_NAME = "demo1"
+        CONTAINER_NAME = "demo1-container"
+        HOST_PORT = "8081"
+        CONTAINER_PORT = "80"
     }
-
+    
     stages {
-        stage('Checkout') {
+        stage ('welcom'){
             steps {
-                echo "Checking out code..."
-                git url: 'https://github.com/Sansuraj09/demo1.git', branch: 'master'
+                echo "Starting DevOps project"
             }
         }
-
-        stage('Build Docker Image') {
+        
+        stage ('check server') {
             steps {
-                echo "Building Docker image ${IMAGE_NAME}:${IMAGE_TAG}"
-                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -f dockerfile ."
+                sh 'whoami'
+                sh 'hostname'
+                sh 'docker --version'
             }
         }
-
-        stage('Test (optional)') {
+        
+        stage ('Clone Repository') {
             steps {
-                echo "Running simple test (if any)..."
-                // You might place test commands here. Since project has HTML + Dockerfile only, maybe skip or add a placeholder
+                git 'https://github.com/Sansuraj09/demo1.git'
             }
         }
-
-        stage('Deploy') {
+        
+        stage ('chech project file') {
             steps {
-                echo "Deploying container ${CONTAINER_NAME}"
-                // stop and remove existing container if running
-                sh """
-                  docker stop ${CONTAINER_NAME} || true
-                  docker rm ${CONTAINER_NAME} || true
-                """
-                // run new container
-                sh "docker run -d --name ${CONTAINER_NAME} -p 80:80 ${IMAGE_NAME}:${IMAGE_TAG}"
+                sh 'pwd'
+                sh 'ls -la'
+            }
+        }
+        stage ('Build images') {
+            steps {
+                sh 'docker build -t $APP_NAME .'
+            }
+        }
+        stage ('chech docker image') {
+            steps {
+                sh 'docker images'
+            }
+        }
+        
+        stage ('Run container') {
+            steps {
+                sh '''
+                docker run -d \
+                --name $CONTAINER_NAME \
+                -p $HOST_PORT:$CONTAINER_PORT \
+                $APP_NAME
+                '''
+            }
+        }
+        stage ('check container') {
+            steps {
+                sh 'docker ps'
+            }
+        }
+        
+        stage ('Apliction URL') {
+            steps {
+                sh '''
+                IP=$(hostname -I | awk '{print $1}')
+                echo "Application is available at:"
+                echo "http://$IP:$HOST_PORT"
+                '''
             }
         }
     }
-
     post {
-        success {
-            echo "✅ Pipeline finished successfully. Deployed ${IMAGE_NAME}:${IMAGE_TAG}"
+            success {
+                echo 'Pipeline completed successfully!'           
+            }
+            failure {
+                 echo 'Pipeline failed. Check console output.'
+            }
         }
-        failure {
-            echo "❌ Pipeline failed."
-        }
-    }
 }
